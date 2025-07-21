@@ -11,21 +11,23 @@ const port = 8000;
 const server = net.createServer((socket) => {
   console.log(`Some node connected.`);
   
-  const newNode = `${socket.host}:${socket.port}`
+  const newNode = socket.remoteAddress + ':' + socket.remotePort;
   
   if (!Nodes.Nodes.includes(newNode)) {
-    Nodes.push(newNode);
+    Nodes.Nodes.push(newNode.replace('::ffff:', ''));
     
-    console.log(`New node added to nodes list. Node : ${newNode}`)
+    console.log(`New node added to nodes list. Node : ${newNode.replace('::ffff:', '')}`);
+    
+    console.log(`Node list : ${Nodes.Nodes}`)
   }
 
   socket.on("data", (buffer) => {
     const data = JSON.parse(buffer);
 
     if (data.event == 'registerNode') {
-      console.log(`New node register. Node : ${data.node}`);
+      console.log(`New node register. Node : ${data.data.node}`);
       
-      Nodes.Nodes.push(data.node);
+      Nodes.Nodes.push(data.data.node);
       
       socket.write('Node register success.');
     }
@@ -38,6 +40,10 @@ const server = net.createServer((socket) => {
       socket.write(JSON.stringify(CamelNetwork.pendingTransactions));
     }
 
+    if (data.event == 'newTrasaction') {
+      console.log(`New transaction. Transaction: ${data.data}`)
+    }
+
     if (data.event == "createTransaction") {
       const { from, to, amount, note } = data.data;
 
@@ -46,6 +52,14 @@ const server = net.createServer((socket) => {
       CamelNetwork.createTransaction(tx);
 
       socket.write(`Transaction created and added to pending transaction.`);
+      
+      Nodes.Nodes.forEach(node => {
+        const address = node.split(':');
+        
+        const socket = net.createConnection({host: address[0], port: address[1] }, () => {
+          socket.write(JSON.stringify({event: newTransaction, data: tx}))
+        })
+      })
     }
 
     if (data.event == "mine") {
