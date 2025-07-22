@@ -1,5 +1,5 @@
 const genesisNode = true;
 
-const Nodes = ['192.168.100.85:8000'];
+const Nodes = ["192.168.100.5:8000"];
 
-module.exports = {Nodes, genesisNode};
+module.exports = { Nodes, genesisNode };
